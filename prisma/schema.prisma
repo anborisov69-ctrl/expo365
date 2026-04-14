@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+enum UserRole {
+  EXHIBITOR
+  BUYER
+}
+
+model User {
+  id             String          @id @default(cuid())
+  email          String          @unique
+  passwordHash   String
+  role           UserRole
+  fullName       String
+  company        Company?        @relation(fields: [companyId], references: [id])
+  companyId      String?
+  inquiries      Inquiry[]
+  sampleRequests SampleRequest[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+model Company {
+  id          String    @id @default(cuid())
+  name        String
+  logoUrl     String?
+  description String?
+  contacts    String?
+  owner       User[]
+  products    Product[]
+  inquiries   Inquiry[]
+  viewsCount  Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Product {
+  id              String          @id @default(cuid())
+  company         Company         @relation(fields: [companyId], references: [id])
+  companyId       String
+  title           String
+  description     String
+  imageUrl        String?
+  category        String
+  price           Decimal
+  sampleAvailable Boolean         @default(false)
+  inquiries       Inquiry[]
+  sampleRequests  SampleRequest[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([category, createdAt])
+}
+
+model Inquiry {
+  id         String   @id @default(cuid())
+  buyer      User     @relation(fields: [buyerId], references: [id])
+  buyerId    String
+  company    Company  @relation(fields: [companyId], references: [id])
+  companyId  String
+  product    Product  @relation(fields: [productId], references: [id])
+  productId  String
+  message    String?
+  status     String   @default("NEW")
+  createdAt  DateTime @default(now())
+}
+
+model SampleRequest {
+  id         String   @id @default(cuid())
+  buyer      User     @relation(fields: [buyerId], references: [id])
+  buyerId    String
+  product    Product  @relation(fields: [productId], references: [id])
+  productId  String
+  quantity   Int      @default(1)
+  status     String   @default("NEW")
+  createdAt  DateTime @default(now())
+}
