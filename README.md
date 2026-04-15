@@ -1,8 +1,8 @@
 # expo365
 
-B2B-платформа **ЭКСПО 365** (Next.js 15, TypeScript, Tailwind, Prisma).
+Заглушка **ЭКСПО 365 — MVP** на Next.js 15. Деплой на [Vercel](https://vercel.com): подключите репозиторий и используйте команду сборки по умолчанию (`npm run build`).
 
-## Запуск
+## Локально
 
 ```bash
 npm install
