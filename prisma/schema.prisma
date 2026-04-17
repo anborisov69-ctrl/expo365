@@ -1,0 +1,178 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  EXHIBITOR
+  VISITOR
+  ADMIN
+}
+
+enum ProductCategory {
+  COFFEE
+  TEA
+  EQUIPMENT
+  DISHES
+}
+
+enum DemandStatus {
+  ACTIVE
+  CLOSED
+  EXPIRED
+}
+
+enum BidStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+enum InquiryType {
+  CP
+  SAMPLE
+}
+
+enum InquiryStatus {
+  PENDING
+  SENT
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
+
+model User {
+  id            String   @id @default(cuid())
+  /// Уникальный при указании; для входа по email
+  email         String?  @unique
+  password      String
+  name          String
+  role          Role
+  /// Компания посетителя (опционально); в SQLite колонка `buyerCompany`
+  visitorCompany String? @map("buyerCompany")
+  /// Нормализованный номер (+7…), уникальный; вход по телефону
+  phone         String?  @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  company       Company?
+  demandRequests DemandRequest[]
+  inquiries     Inquiry[] @relation("VisitorInquiries")
+  adminLogs     AdminLog[] @relation("AdminLogAdmin")
+  adminLogTargets AdminLog[] @relation("AdminLogTarget")
+}
+
+/// Журнал действий администраторов (имперсонация и др.)
+model AdminLog {
+  id            String   @id @default(cuid())
+  adminId       String
+  admin         User     @relation("AdminLogAdmin", fields: [adminId], references: [id], onDelete: Cascade)
+  action        String
+  targetUserId  String?
+  targetUser    User?    @relation("AdminLogTarget", fields: [targetUserId], references: [id], onDelete: SetNull)
+  details       Json?
+  createdAt     DateTime @default(now())
+
+  @@index([adminId])
+  @@index([createdAt])
+}
+
+/// Заглушка профиля компании для экспонента (создаётся при регистрации)
+model Company {
+  id        String    @id @default(cuid())
+  name      String
+  logoUrl   String?
+  /// Краткое описание компании для профиля
+  description String?
+  /// Сайт компании
+  website   String?
+  /// JSON-массив категорий ProductCategory для ленты спроса, например ["COFFEE","TEA"]
+  expertiseCategories String @default("[]")
+  userId    String    @unique
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products  Product[]
+  bids      Bid[]
+  inquiries Inquiry[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+/// Новинка / товар в ленте
+model Product {
+  id                  String          @id @default(cuid())
+  /// В БД колонка исторически называется `title`
+  name                String          @map("title")
+  description         String
+  price               String
+  /// Превью (обложка): для изображения — тот же файл; для видео — постер / первый кадр
+  imageUrl            String?
+  /// Тип медиа в карточке: image | video
+  mediaType           String          @default("image")
+  /// URL основного медиа (для видео — файл ролика; для изображения совпадает с imageUrl или null)
+  mediaUrl            String?
+  category            ProductCategory
+  isSampleAvailable   Boolean         @default(false)
+  companyId           String
+  company             Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt           DateTime        @default(now())
+  inquiries           Inquiry[]
+}
+
+/// Заявка посетителя (лента спроса / DemandRequest)
+model DemandRequest {
+  id          String          @id @default(cuid())
+  title       String
+  description String?
+  category    ProductCategory @default(COFFEE)
+  quantity    String?
+  deadline    String?
+  budget      String?
+  status      DemandStatus    @default(ACTIVE)
+  /// В БД колонка `buyerId`
+  visitorId   String          @map("buyerId")
+  visitor     User            @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+  bids        Bid[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@map("Demand")
+}
+
+/// Отклик экспонента на заявку
+model Bid {
+  id           String    @id @default(cuid())
+  demandId     String
+  demandRequest DemandRequest @relation(fields: [demandId], references: [id], onDelete: Cascade)
+  companyId    String
+  company      Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  proposal     String
+  price        String
+  contactEmail String
+  contactPhone String
+  status       BidStatus @default(PENDING)
+  createdAt    DateTime  @default(now())
+
+  @@unique([demandId, companyId])
+}
+
+/// Запрос КП или образца от посетителя
+model Inquiry {
+  id             String         @id @default(cuid())
+  productId      String
+  product        Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  companyId      String
+  company        Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  /// В БД колонка `buyerId`
+  visitorId      String         @map("buyerId")
+  visitor        User           @relation("VisitorInquiries", fields: [visitorId], references: [id], onDelete: Cascade)
+  customerName   String
+  customerEmail  String
+  customerPhone  String
+  message        String
+  type           InquiryType
+  status         InquiryStatus  @default(PENDING)
+  createdAt      DateTime       @default(now())
+}

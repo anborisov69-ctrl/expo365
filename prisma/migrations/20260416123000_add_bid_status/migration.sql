@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Bid" ADD COLUMN "status" TEXT NOT NULL DEFAULT 'PENDING';

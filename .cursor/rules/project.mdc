@@ -1,0 +1,27 @@
+---
+description: Core project standards for EXPO 365
+alwaysApply: true
+---
+
+# ЭКСПО 365 — Project Rules
+
+## Tech Stack
+- Frontend: Next.js 15 with App Router, TypeScript, Tailwind CSS.
+- Backend: Next.js API routes (serverless).
+- Database: PostgreSQL with Prisma ORM.
+- Authentication: JWT + bcrypt (ESIA integration later).
+- State management: React Context + Zustand for complex states.
+
+## Code Style
+- Use TypeScript with strict mode and avoid `any`.
+- Prefer Server Components; use `'use client'` only when necessary.
+- Use Tailwind CSS utility classes and avoid custom CSS files.
+- Add error handling for all async operations.
+- Use descriptive variable names and avoid abbreviations.
+
+## Project Structure
+- `src/app/` — Next.js App Router.
+- `src/components/` — Reusable React components.
+- `src/lib/` — Utilities, database client, API helpers.
+- `src/types/` — TypeScript type definitions.
+- `prisma/` — Database schema.
