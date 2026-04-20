@@ -2,11 +2,7 @@
 
 import { PasswordField } from "@/components/auth/PasswordField";
 import { SiteHeaderLogo } from "@/components/layout/SiteHeaderLogo";
-import {
-  type DemoRole,
-  readDemoSession,
-  saveDemoSessionAfterClearingServerCookie
-} from "@/lib/demo-local-auth";
+import { clearDemoSession } from "@/lib/demo-local-auth";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -15,22 +11,47 @@ export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<DemoRole>("VISITOR");
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setError(null);
     const emailTrim = email.trim();
     if (!emailTrim) {
-      alert("Введите email");
+      setError("Введите email или телефон");
       return;
     }
-    await saveDemoSessionAfterClearingServerCookie(role, emailTrim);
-    const saved = readDemoSession();
-    const effectiveRole = saved.role ?? saved.user?.role ?? role;
-    const nextPath =
-      effectiveRole === "EXHIBITOR" ? "/exhibitor/dashboard" : "/visitor/dashboard";
-    router.push(nextPath);
-    router.refresh();
+    if (!password) {
+      setError("Введите пароль");
+      return;
+    }
+
+    setPending(true);
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier: emailTrim, password })
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        redirect?: string;
+        error?: string;
+      };
+      if (!res.ok) {
+        setError(data.error ?? "Не удалось войти");
+        return;
+      }
+      clearDemoSession();
+      router.push(data.redirect ?? "/");
+      router.refresh();
+    } catch {
+      setError("Ошибка сети");
+    } finally {
+      setPending(false);
+    }
   }
 
   return (
@@ -41,18 +62,20 @@ export default function LoginPage() {
         </div>
         <h1 className="mt-4 text-2xl font-bold text-expoBlue">Вход</h1>
         <p className="mt-2 text-sm text-slate-500">
-          Демо-режим: данные не отправляются на сервер, сессия только в браузере (
-          <span className="font-mono text-xs">localStorage</span>).
+          Вход по учётной записи в базе. Демо после сида:{" "}
+          <span className="font-mono text-xs">stand@expo365.ru</span> /{" "}
+          <span className="font-mono text-xs">demo123</span> (экспонент), посетитель — см. вывод{" "}
+          <span className="font-mono text-[11px]">npx prisma db seed</span>.
         </p>
-        <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+        <form className="mt-6 space-y-4" onSubmit={(e) => void handleSubmit(e)}>
           <div>
             <label htmlFor="login-email" className="block text-sm font-medium text-slate-700">
-              Email
+              Email или телефон
             </label>
             <input
               id="login-email"
-              type="email"
-              autoComplete="email"
+              type="text"
+              autoComplete="username"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               placeholder="name@example.com"
@@ -64,39 +87,15 @@ export default function LoginPage() {
             autoComplete="current-password"
             value={password}
             onChange={setPassword}
-            required={false}
-            helperText="В демо-режиме пароль не проверяется."
+            required
           />
-          <fieldset>
-            <legend className="text-sm font-medium text-slate-700">Роль</legend>
-            <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:gap-4">
-              <label className="flex cursor-pointer items-center gap-2">
-                <input
-                  type="radio"
-                  name="login-role"
-                  checked={role === "VISITOR"}
-                  onChange={() => setRole("VISITOR")}
-                  className="text-expoOrange focus:ring-expoBlue"
-                />
-                <span className="text-sm text-slate-800">Посетитель</span>
-              </label>
-              <label className="flex cursor-pointer items-center gap-2">
-                <input
-                  type="radio"
-                  name="login-role"
-                  checked={role === "EXHIBITOR"}
-                  onChange={() => setRole("EXHIBITOR")}
-                  className="text-expoOrange focus:ring-expoBlue"
-                />
-                <span className="text-sm text-slate-800">Экспонент</span>
-              </label>
-            </div>
-          </fieldset>
+          {error ? <p className="text-sm text-red-600">{error}</p> : null}
           <button
             type="submit"
-            className="w-full rounded-xl bg-expoOrange py-3 text-sm font-semibold text-white shadow-sm transition hover:brightness-95"
+            disabled={pending}
+            className="w-full rounded-xl bg-expoOrange py-3 text-sm font-semibold text-white shadow-sm transition hover:brightness-95 disabled:opacity-60"
           >
-            Войти
+            {pending ? "Вход…" : "Войти"}
           </button>
         </form>
         <p className="mt-4 text-center text-sm text-slate-600">

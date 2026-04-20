@@ -34,7 +34,9 @@ export async function GET() {
       mediaType: row.mediaType === "video" ? "video" : "image",
       mediaUrl: row.mediaUrl,
       isSampleAvailable: row.isSampleAvailable,
+      isPublished: row.isPublished,
       inquiryCount: row._count.inquiries,
+      companyId: row.companyId,
       company: {
         name: row.company.name,
         logo: row.company.logoUrl

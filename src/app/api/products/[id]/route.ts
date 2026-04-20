@@ -14,6 +14,83 @@ function isProductCategory(value: unknown): value is ProductCategory {
 
 type RouteContext = { params: Promise<{ id: string }> };
 
+export async function PATCH(request: Request, context: RouteContext) {
+  const session = await getSessionFromCookies();
+  const companyId = await getCompanyIdForExhibitorSession(session);
+  if (!companyId) {
+    return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
+  }
+
+  const { id } = await context.params;
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Некорректный JSON" }, { status: 400 });
+  }
+
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return NextResponse.json({ error: "Некорректное тело запроса" }, { status: 400 });
+  }
+
+  const record = body as Record<string, unknown>;
+  const keys = Object.keys(record);
+  if (keys.length !== 1 || keys[0] !== "isPublished") {
+    return NextResponse.json(
+      { error: "Разрешено только поле isPublished (boolean)" },
+      { status: 400 }
+    );
+  }
+  if (typeof record.isPublished !== "boolean") {
+    return NextResponse.json({ error: "isPublished должен быть boolean" }, { status: 400 });
+  }
+
+  try {
+    const existing = await prisma.product.findUnique({
+      where: { id },
+      select: { companyId: true }
+    });
+
+    if (!existing || existing.companyId !== companyId) {
+      return NextResponse.json({ error: "Новинка не найдена" }, { status: 404 });
+    }
+
+    const updated = await prisma.product.update({
+      where: { id },
+      data: { isPublished: record.isPublished },
+      include: {
+        company: {
+          select: { name: true, logoUrl: true }
+        }
+      }
+    });
+
+    return NextResponse.json({
+      product: {
+        id: updated.id,
+        name: updated.name,
+        description: updated.description,
+        price: updated.price,
+        category: updated.category,
+        imageUrl: updated.imageUrl,
+        mediaType: updated.mediaType === "video" ? "video" : "image",
+        mediaUrl: updated.mediaUrl,
+        isSampleAvailable: updated.isSampleAvailable,
+        isPublished: updated.isPublished,
+        companyId: updated.companyId,
+        company: {
+          name: updated.company.name,
+          logo: updated.company.logoUrl
+        }
+      }
+    });
+  } catch (error) {
+    console.error("PATCH /api/products/[id]", error);
+    return NextResponse.json({ error: "Не удалось обновить новинку" }, { status: 500 });
+  }
+}
+
 export async function PUT(request: Request, context: RouteContext) {
   const session = await getSessionFromCookies();
   const companyId = await getCompanyIdForExhibitorSession(session);
@@ -49,6 +126,8 @@ export async function PUT(request: Request, context: RouteContext) {
       : null;
   const mediaType = normalizeProductMediaType(record.mediaType);
   const isSampleAvailable = Boolean(record.isSampleAvailable);
+  const isPublished =
+    typeof record.isPublished === "boolean" ? record.isPublished : true;
 
   if (!name || !description || !price) {
     return NextResponse.json({ error: "Заполните название, описание и цену" }, { status: 400 });
@@ -87,7 +166,8 @@ export async function PUT(request: Request, context: RouteContext) {
         imageUrl,
         mediaType,
         mediaUrl: mediaType === "image" ? mediaUrl ?? imageUrl : mediaUrl,
-        isSampleAvailable
+        isSampleAvailable,
+        isPublished
       },
       include: {
         company: {
@@ -107,6 +187,8 @@ export async function PUT(request: Request, context: RouteContext) {
         mediaType: updated.mediaType === "video" ? "video" : "image",
         mediaUrl: updated.mediaUrl,
         isSampleAvailable: updated.isSampleAvailable,
+        isPublished: updated.isPublished,
+        companyId: updated.companyId,
         company: {
           name: updated.company.name,
           logo: updated.company.logoUrl

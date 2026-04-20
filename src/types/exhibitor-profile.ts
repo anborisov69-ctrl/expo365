@@ -1,3 +1,4 @@
+import type { CompanyContactsPayload } from "@/lib/company-contacts";
 import type { ProductCategory } from "@prisma/client";
 
 export type ExhibitorProfileCompanyProps = {
@@ -6,5 +7,6 @@ export type ExhibitorProfileCompanyProps = {
   logoUrl: string | null;
   description: string | null;
   website: string | null;
+  contacts: CompanyContactsPayload;
   expertiseCategories: ProductCategory[];
 };

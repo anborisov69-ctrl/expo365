@@ -1,11 +1,13 @@
 "use client";
 
+import { PRODUCT_IMAGE_PLACEHOLDER_PATH } from "@/lib/exhibitor-default-images";
 import { getProductCoverSrc, isProductVideo } from "@/lib/product-media";
 import type { ProductApiRow } from "@/types/product-api";
 import { Play } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface ProductCoverThumbProps {
-  product: Pick<ProductApiRow, "imageUrl" | "mediaType">;
+  product: Pick<ProductApiRow, "imageUrl" | "mediaType" | "name">;
   /** Дополнительные классы для внешнего контейнера (aspect, rounded и т.д.) */
   className?: string;
   imgClassName?: string;
@@ -13,19 +15,35 @@ interface ProductCoverThumbProps {
 
 /**
  * Обложка карточки: изображение-превью; для видео — иконка воспроизведения поверх.
+ * При ошибке загрузки внешнего URL подставляется локальная заглушка.
  */
 export function ProductCoverThumb({
   product,
   className = "",
-  imgClassName = "h-full w-full object-cover"
+  imgClassName = "h-full w-full object-contain bg-slate-50"
 }: ProductCoverThumbProps) {
-  const src = getProductCoverSrc(product);
+  const primarySrc = getProductCoverSrc(product);
+  const [src, setSrc] = useState(primarySrc);
   const showPlay = isProductVideo(product);
+
+  useEffect(() => {
+    setSrc(getProductCoverSrc(product));
+  }, [product.imageUrl, product.mediaType]);
 
   return (
     <div className={`relative overflow-hidden ${className}`}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt="" className={imgClassName} />
+      <img
+        src={src}
+        alt={product.name}
+        className={imgClassName}
+        loading="lazy"
+        decoding="async"
+        referrerPolicy="no-referrer"
+        onError={() => {
+          setSrc(PRODUCT_IMAGE_PLACEHOLDER_PATH);
+        }}
+      />
       {showPlay ? (
         <div
           className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/15"

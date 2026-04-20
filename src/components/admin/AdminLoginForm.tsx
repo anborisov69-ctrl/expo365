@@ -41,6 +41,10 @@ export function AdminLoginForm() {
     <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-12">
       <h1 className="text-2xl font-bold text-slate-900">Вход администратора</h1>
       <p className="mt-2 text-sm text-slate-500">Техподдержка EXPO 365</p>
+      <p className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+        Демо для презентации: <span className="font-mono">demo@expo365.ru</span> /{" "}
+        <span className="font-mono">demo123</span>
+      </p>
       <form onSubmit={handleSubmit} className="mt-8 space-y-4">
         <div>
           <label htmlFor="admin-email" className="block text-sm font-medium text-slate-700">

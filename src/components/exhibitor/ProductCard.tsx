@@ -2,16 +2,10 @@
 
 import { ProductCoverThumb } from "@/components/product/ProductCoverThumb";
 import type { ProductApiRow } from "@/types/product-api";
-import { ProductCategory } from "@prisma/client";
+import { PRODUCT_CATEGORY_LABEL_RU } from "@/lib/product-category-labels";
 import { Pencil, Trash2 } from "lucide-react";
 
-const CATEGORY_LABELS: Record<ProductCategory, string> = {
-  [ProductCategory.COFFEE]: "Кофе",
-  [ProductCategory.TEA]: "Чай",
-  [ProductCategory.EQUIPMENT]: "Оборудование",
-  [ProductCategory.DISHES]: "Посуда"
-};
-
+/** Карточка новинки в кабинете экспонента: редактирование и удаление. Действия посетителя по категории — см. `VisitorProductActionButtons`. */
 interface ProductCardProps {
   product: ProductApiRow;
   onEdit: (product: ProductApiRow) => void;
@@ -23,15 +17,11 @@ export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
     <article
       className={`group flex flex-col overflow-hidden rounded-[12px] border border-slate-100/90 bg-white shadow-exhibitor transition-shadow duration-200 hover:shadow-exhibitorHover md:flex-row md:items-stretch`}
     >
-      <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200 md:aspect-auto md:h-auto md:w-52 md:min-h-[160px] md:max-w-[13rem]">
-        <ProductCoverThumb
-          product={product}
-          className="h-full w-full"
-          imgClassName="h-full w-full object-cover"
-        />
+      <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-slate-100 md:aspect-auto md:h-auto md:w-52 md:min-h-[160px] md:max-w-[13rem]">
+        <ProductCoverThumb product={product} className="h-full w-full" />
       </div>
       <div className="flex min-w-0 flex-1 flex-col p-5">
-        <p className="text-xs font-semibold uppercase tracking-wide text-expoOrange">{CATEGORY_LABELS[product.category]}</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-expoOrange">{PRODUCT_CATEGORY_LABEL_RU[product.category]}</p>
         <h3 className="mt-1 text-lg font-semibold text-expoBlue">{product.name}</h3>
         <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-slate-600">{product.description}</p>
         <p className="mt-3 text-xl font-bold text-slate-900">{product.price}</p>

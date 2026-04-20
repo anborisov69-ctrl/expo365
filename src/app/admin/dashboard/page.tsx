@@ -1,3 +1,4 @@
+import { AdminEditExhibitorProfileButton } from "@/components/admin/AdminEditExhibitorProfileButton";
 import { AdminImpersonateButton } from "@/components/admin/AdminImpersonateButton";
 import { getSessionFromCookies } from "@/lib/session-server";
 import { prisma } from "@/lib/prisma";
@@ -19,16 +20,40 @@ export default async function AdminDashboardPage({
 
   const q = ((await searchParams).q ?? "").trim();
 
+  const searchExhibitorWhere = q
+    ? {
+        OR: [
+          { email: { contains: q } },
+          { name: { contains: q } },
+          { company: { name: { contains: q } } }
+        ]
+      }
+    : {};
+
+  const exhibitors = await prisma.user.findMany({
+    where: {
+      role: Role.EXHIBITOR,
+      ...searchExhibitorWhere
+    },
+    take: 100,
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      company: { select: { id: true, name: true } }
+    }
+  });
+
   const users = await prisma.user.findMany({
     where: {
-      role: { in: [Role.EXHIBITOR, Role.VISITOR] },
+      role: Role.VISITOR,
       ...(q
         ? {
             OR: [
               { email: { contains: q } },
               { name: { contains: q } },
-              { visitorCompany: { contains: q } },
-              { company: { name: { contains: q } } }
+              { visitorCompany: { contains: q } }
             ]
           }
         : {})
@@ -41,7 +66,7 @@ export default async function AdminDashboardPage({
       name: true,
       role: true,
       visitorCompany: true,
-      company: { select: { name: true } }
+      company: { select: { id: true, name: true } }
     }
   });
 
@@ -74,13 +99,66 @@ export default async function AdminDashboardPage({
           </button>
         </form>
 
-        <div className="mt-8 overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+        <h2 className="mt-10 text-lg font-semibold text-slate-900">Экспоненты</h2>
+        <p className="mt-1 text-sm text-slate-600">
+          Публичная витрина открывается по адресу{" "}
+          <code className="rounded bg-slate-100 px-1 py-0.5 text-xs">/company/[id]</code>.
+        </p>
+        <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+          <table className="w-full min-w-[720px] text-left text-sm">
+            <thead className="border-b border-slate-200 bg-slate-50 text-slate-600">
+              <tr>
+                <th className="px-4 py-3 font-medium">Компания</th>
+                <th className="px-4 py-3 font-medium">Email</th>
+                <th className="px-4 py-3 font-medium">Действия</th>
+              </tr>
+            </thead>
+            <tbody>
+              {exhibitors.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="px-4 py-8 text-center text-slate-500">
+                    Экспоненты не найдены
+                  </td>
+                </tr>
+              ) : (
+                exhibitors.map((u) => (
+                  <tr key={u.id} className="border-b border-slate-100 last:border-0">
+                    <td className="px-4 py-3 font-medium text-slate-900">
+                      {u.company?.name ?? "—"}
+                    </td>
+                    <td className="px-4 py-3 text-slate-700">{u.email ?? "—"}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-2">
+                        {u.company?.id ? (
+                          <>
+                            <AdminEditExhibitorProfileButton companyId={u.company.id} />
+                            <Link
+                              href={`/company/${u.company.id}`}
+                              className="inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 hover:bg-slate-50"
+                            >
+                              Публичная витрина
+                            </Link>
+                          </>
+                        ) : null}
+                        <AdminImpersonateButton userId={u.id} role="EXHIBITOR">
+                          Войти как экспонент
+                        </AdminImpersonateButton>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <h2 className="mt-10 text-lg font-semibold text-slate-900">Посетители</h2>
+        <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
           <table className="w-full min-w-[640px] text-left text-sm">
             <thead className="border-b border-slate-200 bg-slate-50 text-slate-600">
               <tr>
                 <th className="px-4 py-3 font-medium">Имя</th>
                 <th className="px-4 py-3 font-medium">Email</th>
-                <th className="px-4 py-3 font-medium">Роль</th>
                 <th className="px-4 py-3 font-medium">Компания</th>
                 <th className="px-4 py-3 font-medium">Действия</th>
               </tr>
@@ -88,34 +166,23 @@ export default async function AdminDashboardPage({
             <tbody>
               {users.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
-                    Пользователи не найдены
+                  <td colSpan={4} className="px-4 py-8 text-center text-slate-500">
+                    Посетители не найдены
                   </td>
                 </tr>
               ) : (
                 users.map((u) => {
-                  const companyLabel =
-                    u.role === Role.EXHIBITOR
-                      ? (u.company?.name ?? "—")
-                      : (u.visitorCompany ?? "—");
+                  const companyLabel = u.visitorCompany ?? "—";
                   return (
                     <tr key={u.id} className="border-b border-slate-100 last:border-0">
                       <td className="px-4 py-3 font-medium text-slate-900">{u.name}</td>
                       <td className="px-4 py-3 text-slate-700">{u.email ?? "—"}</td>
-                      <td className="px-4 py-3">{u.role}</td>
                       <td className="px-4 py-3 text-slate-600">{companyLabel}</td>
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap gap-2">
-                          {u.role === Role.EXHIBITOR ? (
-                            <AdminImpersonateButton userId={u.id} role="EXHIBITOR">
-                              Войти как экспонент
-                            </AdminImpersonateButton>
-                          ) : null}
-                          {u.role === Role.VISITOR ? (
-                            <AdminImpersonateButton userId={u.id} role="VISITOR">
-                              Войти как посетитель
-                            </AdminImpersonateButton>
-                          ) : null}
+                          <AdminImpersonateButton userId={u.id} role="VISITOR">
+                            Войти как посетитель
+                          </AdminImpersonateButton>
                         </div>
                       </td>
                     </tr>

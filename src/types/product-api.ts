@@ -12,6 +12,9 @@ export interface ProductApiRow {
   mediaType: ProductMediaType;
   mediaUrl: string | null;
   isSampleAvailable: boolean;
+  /** Участие в публичной ленте `/feed` */
+  isPublished: boolean;
+  companyId: string;
   company: {
     name: string;
     logo: string | null;
@@ -27,6 +30,7 @@ export type ProductFormPayload = {
   mediaType: ProductMediaType;
   mediaUrl: string | null;
   isSampleAvailable: boolean;
+  isPublished: boolean;
 };
 
 /** Новинка с числом запросов (кабинет экспонента) */

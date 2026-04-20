@@ -3,7 +3,7 @@ import { getCompanyIdForExhibitorSession } from "@/lib/exhibitor-company-server"
 import { normalizeProductMediaType } from "@/lib/product-media";
 import { parseCategoryQueryParam } from "@/lib/product-category-map";
 import { prisma } from "@/lib/prisma";
-import { ProductCategory } from "@prisma/client";
+import { type Prisma, ProductCategory } from "@prisma/client";
 import { NextResponse } from "next/server";
 
 function isProductCategory(value: unknown): value is ProductCategory {
@@ -23,10 +23,12 @@ export async function GET(request: Request) {
 
   const distinctCategories = [...new Set(parsedCategories)];
 
-  const where: {
-    companyId?: string;
-    category?: { in: ProductCategory[] };
-  } = {};
+  const session = await getSessionFromCookies();
+  const ownCompanyId = await getCompanyIdForExhibitorSession(session);
+  const ownerBrowsingOwnCatalog =
+    Boolean(ownCompanyId && companyId && companyId === ownCompanyId);
+
+  const where: Prisma.ProductWhereInput = {};
 
   if (companyId) {
     where.companyId = companyId;
@@ -34,6 +36,10 @@ export async function GET(request: Request) {
 
   if (distinctCategories.length > 0) {
     where.category = { in: distinctCategories };
+  }
+
+  if (!ownerBrowsingOwnCatalog) {
+    where.isPublished = true;
   }
 
   try {
@@ -60,6 +66,8 @@ export async function GET(request: Request) {
       mediaType: row.mediaType === "video" ? "video" : "image",
       mediaUrl: row.mediaUrl,
       isSampleAvailable: row.isSampleAvailable,
+      isPublished: row.isPublished,
+      companyId: row.companyId,
       company: {
         name: row.company.name,
         logo: row.company.logoUrl
@@ -106,6 +114,8 @@ export async function POST(request: Request) {
       : null;
   const mediaType = normalizeProductMediaType(record.mediaType);
   const isSampleAvailable = Boolean(record.isSampleAvailable);
+  const isPublished =
+    typeof record.isPublished === "boolean" ? record.isPublished : true;
 
   if (!name || !description || !price) {
     return NextResponse.json({ error: "Заполните название, описание и цену" }, { status: 400 });
@@ -135,6 +145,7 @@ export async function POST(request: Request) {
         mediaType,
         mediaUrl: mediaType === "image" ? mediaUrl ?? imageUrl : mediaUrl,
         isSampleAvailable,
+        isPublished,
         companyId
       },
       include: {
@@ -155,6 +166,8 @@ export async function POST(request: Request) {
         mediaType: created.mediaType === "video" ? "video" : "image",
         mediaUrl: created.mediaUrl,
         isSampleAvailable: created.isSampleAvailable,
+        isPublished: created.isPublished,
+        companyId: created.companyId,
         company: {
           name: created.company.name,
           logo: created.company.logoUrl

@@ -1,6 +1,6 @@
 /**
  * Извлекает кадр из локального видеофайла для превью (JPEG blob).
- * При ошибке возвращает null — тогда можно использовать /placeholder.png.
+ * При ошибке возвращает null — тогда можно использовать /placeholder-product.svg.
  */
 export async function captureVideoFrameAsJpegBlob(
   file: File,

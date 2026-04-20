@@ -61,6 +61,7 @@ export function AddProductModal({ open, onClose, initialProduct, onSubmit }: Add
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<ProductMediaType>("image");
   const [isSampleAvailable, setIsSampleAvailable] = useState(false);
+  const [isPublished, setIsPublished] = useState(true);
   const [pending, setPending] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -80,6 +81,7 @@ export function AddProductModal({ open, onClose, initialProduct, onSubmit }: Add
       setMediaUrl(initialProduct.mediaUrl);
       setMediaType(initialProduct.mediaType);
       setIsSampleAvailable(initialProduct.isSampleAvailable);
+      setIsPublished(initialProduct.isPublished);
     } else {
       setName("");
       setDescription("");
@@ -89,6 +91,7 @@ export function AddProductModal({ open, onClose, initialProduct, onSubmit }: Add
       setMediaUrl(null);
       setMediaType("image");
       setIsSampleAvailable(false);
+      setIsPublished(true);
     }
   }, [open, initialProduct]);
 
@@ -182,7 +185,8 @@ export function AddProductModal({ open, onClose, initialProduct, onSubmit }: Add
         imageUrl,
         mediaUrl: mediaType === "video" ? mediaUrl : mediaUrl ?? imageUrl,
         mediaType,
-        isSampleAvailable
+        isSampleAvailable,
+        isPublished
       };
       await onSubmit(payload);
       onClose();
@@ -340,6 +344,15 @@ export function AddProductModal({ open, onClose, initialProduct, onSubmit }: Add
               className="h-4 w-4 rounded border-neutral-300 text-expoBlue focus:ring-expoBlue"
             />
             Доступен образец
+          </label>
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={isPublished}
+              onChange={(event) => setIsPublished(event.target.checked)}
+              className="h-4 w-4 rounded border-neutral-300 text-expoBlue focus:ring-expoBlue"
+            />
+            Показывать в общей ленте (/feed)
           </label>
           <button
             type="submit"

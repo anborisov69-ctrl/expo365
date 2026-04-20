@@ -24,9 +24,19 @@ export interface HorecaExhibitor {
   categories: string[];
 }
 
+const HORECA_LOGO_ROTATION = [
+  "/expo-365-logo.png",
+  "/placeholder.png",
+  "/brands/julius-meinl.png",
+  "/placeholder-product.svg"
+] as const;
+
 function logoUrl(label: string): string {
-  const encoded = encodeURIComponent(label.slice(0, 12));
-  return `https://placehold.co/200x200/png/0B2B5E/FFFFFF?text=${encoded}`;
+  let hash = 0;
+  for (let i = 0; i < label.length; i++) {
+    hash = (hash + label.charCodeAt(i) * (i + 1)) % 2147483647;
+  }
+  return HORECA_LOGO_ROTATION[hash % HORECA_LOGO_ROTATION.length];
 }
 
 export const horecaExhibitors: HorecaExhibitor[] = [

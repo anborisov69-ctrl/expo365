@@ -12,7 +12,7 @@ import type { ExhibitorProfileCompanyProps } from "@/types/exhibitor-profile";
 import type { ExhibitorInquiryApiRow } from "@/types/exhibitor-inquiry";
 import type { ProductApiRow, ProductApiRowWithStats, ProductFormPayload } from "@/types/product-api";
 import { BidStatus, InquiryType } from "@prisma/client";
-import { BarChart3, ClipboardList, Grid3x3, MessageCircle, Plus } from "lucide-react";
+import { BarChart3, ClipboardList, Grid3x3, MessageCircle, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -59,6 +59,8 @@ function toProductApiRow(product: ProductApiRowWithStats): ProductApiRow {
     mediaType: product.mediaType,
     mediaUrl: product.mediaUrl,
     isSampleAvailable: product.isSampleAvailable,
+    isPublished: product.isPublished,
+    companyId: product.companyId,
     company: product.company
   };
 }
@@ -127,6 +129,7 @@ export function ExhibitorProfileDashboard({ company }: { company: ExhibitorProfi
     setInquiriesError(null);
     try {
       const params = new URLSearchParams();
+      params.set("companyId", company.id);
       if (inquiryTypeFilter !== "all") {
         params.set("type", inquiryTypeFilter);
       }
@@ -136,7 +139,7 @@ export function ExhibitorProfileDashboard({ company }: { company: ExhibitorProfi
       if (dateTo) {
         params.set("to", dateTo);
       }
-      const response = await fetch(`/api/exhibitor/inquiries?${params.toString()}`, {
+      const response = await fetch(`/api/inquiries?${params.toString()}`, {
         credentials: "include"
       });
       if (!response.ok) {
@@ -150,7 +153,7 @@ export function ExhibitorProfileDashboard({ company }: { company: ExhibitorProfi
     } finally {
       setInquiriesLoading(false);
     }
-  }, [inquiryTypeFilter, dateFrom, dateTo]);
+  }, [company.id, inquiryTypeFilter, dateFrom, dateTo]);
 
   const loadDemandBids = useCallback(async () => {
     setDemandBidsLoading(true);
@@ -181,7 +184,10 @@ export function ExhibitorProfileDashboard({ company }: { company: ExhibitorProfi
     }
   }, [activeTab, loadInquiries, loadDemandBids]);
 
-  const publicationCount = products.length;
+  const publicationCount = useMemo(
+    () => products.filter((p) => p.isPublished).length,
+    [products]
+  );
 
   const hashtags = useMemo(() => {
     return company.expertiseCategories.map((c) => `#${PRODUCT_CATEGORY_HASHTAG_RU[c]}`);
@@ -248,6 +254,37 @@ export function ExhibitorProfileDashboard({ company }: { company: ExhibitorProfi
     await loadProducts();
   }
 
+  async function handlePublishedChange(product: ProductApiRowWithStats, next: boolean) {
+    try {
+      const response = await fetch(`/api/products/${product.id}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isPublished: next })
+      });
+      if (!response.ok) {
+        const data = (await response.json()) as { error?: string };
+        window.alert(data.error ?? "Не удалось обновить статус публикации");
+        return;
+      }
+      setProducts((prev) =>
+        prev.map((p) => (p.id === product.id ? { ...p, isPublished: next } : p))
+      );
+      setDetailProduct((cur) =>
+        cur && cur.id === product.id ? { ...cur, isPublished: next } : cur
+      );
+    } catch {
+      window.alert("Ошибка сети");
+    }
+  }
+
+  async function handleDeleteProductFromGrid(id: string) {
+    if (!window.confirm("Удалить эту новинку? Действие необратимо.")) {
+      return;
+    }
+    await handleDeleteProduct(id);
+  }
+
   const tabs: { id: TabKey; label: string; icon: typeof Grid3x3 }[] = [
     { id: "posts", label: "Новинки", icon: Grid3x3 },
     { id: "requests", label: "Запросы", icon: MessageCircle },
@@ -263,7 +300,7 @@ export function ExhibitorProfileDashboard({ company }: { company: ExhibitorProfi
             <img
               src={company.logoUrl ?? DEFAULT_COMPANY_AVATAR_URL}
               alt=""
-              className="h-full w-full object-cover"
+              className="h-full w-full object-contain bg-white"
             />
           </div>
         </div>
@@ -291,7 +328,7 @@ export function ExhibitorProfileDashboard({ company }: { company: ExhibitorProfi
           <div className="flex justify-center gap-8 sm:justify-start sm:gap-10">
             <div className="text-center">
               <p className="text-base font-bold text-neutral-900">{publicationCount}</p>
-              <p className="text-xs text-neutral-600 sm:text-sm">публикаций</p>
+              <p className="text-xs text-neutral-600 sm:text-sm">новинок в ленте</p>
             </div>
             <div className="text-center">
               <p className="text-base font-bold text-neutral-900">{FOLLOWERS_PLACEHOLDER}</p>
@@ -335,7 +372,7 @@ export function ExhibitorProfileDashboard({ company }: { company: ExhibitorProfi
       </section>
 
       <nav
-        className="sticky top-[57px] z-40 -mx-4 flex justify-center gap-0 border-b border-neutral-200 bg-white/95 px-4 backdrop-blur-sm sm:-mx-6 sm:px-6"
+        className="sticky top-0 z-30 -mx-4 flex justify-center gap-0 border-b border-neutral-200 bg-white/95 px-4 backdrop-blur-sm sm:-mx-6 sm:px-6"
         aria-label="Разделы кабинета"
       >
         {tabs.map(({ id, label, icon: Icon }) => {
@@ -393,36 +430,86 @@ export function ExhibitorProfileDashboard({ company }: { company: ExhibitorProfi
             ) : (
               <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
                 {products.map((product) => (
-                  <button
+                  <div
                     key={product.id}
-                    type="button"
-                    onClick={() => {
-                      setDetailProduct(product);
-                      setDetailOpen(true);
-                    }}
-                    className="group w-full cursor-pointer rounded-lg border-0 bg-transparent p-0 text-left shadow-md ring-0 transition-all duration-200 hover:scale-[1.02] hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-expoBlue focus:ring-offset-2"
+                    className={`group relative rounded-lg shadow-md transition-all duration-200 hover:shadow-xl ${
+                      product.isPublished ? "" : "opacity-[0.72] ring-1 ring-amber-200/90"
+                    }`}
                   >
-                    <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-neutral-100">
-                      <div className="absolute inset-0">
-                        <ProductCoverThumb
-                          product={product}
-                          className="h-full w-full"
-                          imgClassName="h-full w-full object-cover"
-                        />
-                      </div>
-                      <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/75 via-black/40 to-transparent px-3 pb-3 pt-12">
-                        <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.95)]">
-                          {product.name}
-                        </h3>
-                        <p className="mt-1 text-xs font-medium text-white/95 [text-shadow:0_1px_2px_rgba(0,0,0,0.9)]">
-                          {formatProductPriceDisplay(product.price)}
-                        </p>
-                        <p className="mt-0.5 line-clamp-1 text-[11px] text-white/90 [text-shadow:0_1px_2px_rgba(0,0,0,0.85)]">
-                          {product.company.name}
-                        </p>
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      className="block w-full cursor-pointer rounded-lg border-0 bg-transparent p-0 text-left focus:outline-none focus:ring-2 focus:ring-expoBlue focus:ring-offset-2"
+                      onClick={() => {
+                        setDetailProduct(product);
+                        setDetailOpen(true);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          setDetailProduct(product);
+                          setDetailOpen(true);
+                        }
+                      }}
+                    >
+                      <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-neutral-100">
+                        {!product.isPublished ? (
+                          <span className="absolute left-2 top-2 z-20 rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                            Скрыто
+                          </span>
+                        ) : null}
+                        <div className="absolute inset-0">
+                          <ProductCoverThumb
+                            product={product}
+                            className="h-full w-full"
+                            imgClassName="h-full w-full object-contain bg-slate-50"
+                          />
+                        </div>
+                        <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/75 via-black/40 to-transparent px-3 pb-3 pt-12">
+                          <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.95)]">
+                            {product.name}
+                          </h3>
+                          <p className="mt-1 text-xs font-medium text-white/95 [text-shadow:0_1px_2px_rgba(0,0,0,0.9)]">
+                            {formatProductPriceDisplay(product.price)}
+                          </p>
+                          <p className="mt-0.5 line-clamp-1 text-[11px] text-white/90 [text-shadow:0_1px_2px_rgba(0,0,0,0.85)]">
+                            {product.company.name}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </button>
+                    <div className="absolute right-2 top-2 z-30 flex flex-col items-end gap-2">
+                      <label
+                        className="flex cursor-pointer items-center gap-1.5 rounded-full bg-white/95 px-2 py-1 text-xs font-semibold text-neutral-800 shadow-sm ring-1 ring-neutral-200/90"
+                        onClick={(event) => event.stopPropagation()}
+                        onKeyDown={(event) => event.stopPropagation()}
+                      >
+                        <span className="max-w-[4.5rem] leading-tight sm:max-w-none">В ленте</span>
+                        <input
+                          type="checkbox"
+                          checked={product.isPublished}
+                          onChange={(event) => {
+                            event.stopPropagation();
+                            void handlePublishedChange(product, event.target.checked);
+                          }}
+                          onClick={(event) => event.stopPropagation()}
+                          className="h-4 w-4 shrink-0 rounded border-neutral-300 text-expoBlue focus:ring-expoBlue"
+                          aria-label="Опубликовано в общей ленте"
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        className="rounded-full bg-white/95 p-2 text-red-600 shadow-sm ring-1 ring-neutral-200/90 transition hover:bg-red-50"
+                        aria-label="Удалить новинку"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          void handleDeleteProductFromGrid(product.id);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" strokeWidth={2} />
+                      </button>
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
@@ -447,6 +534,7 @@ export function ExhibitorProfileDashboard({ company }: { company: ExhibitorProfi
                   <option value="all">Все</option>
                   <option value="CP">КП</option>
                   <option value="SAMPLE">Образец</option>
+                  <option value="SERVICE">Услуга</option>
                 </select>
               </div>
               <div>
@@ -490,12 +578,12 @@ export function ExhibitorProfileDashboard({ company }: { company: ExhibitorProfi
               <p className="py-12 text-center text-sm text-neutral-500">Загрузка…</p>
             ) : inquiries.length === 0 && !inquiriesError ? (
               <p className="rounded-xl border border-neutral-200 bg-neutral-50 py-12 text-center text-sm text-neutral-600">
-                Входящих запросов пока нет.
+                Нет заявок
               </p>
             ) : (
               <ul className="space-y-3">
                 {inquiries.map((row) => (
-                  <InquiryItem key={row.id} row={row} />
+                  <InquiryItem key={row.id} row={row} onListRefresh={loadInquiries} />
                 ))}
               </ul>
             )}

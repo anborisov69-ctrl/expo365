@@ -1,16 +1,14 @@
 "use client";
 
+import { PRODUCT_CATEGORY_LABEL_RU } from "@/lib/product-category-labels";
 import { ProductCategory } from "@prisma/client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-const CATEGORY_OPTIONS: { value: ProductCategory; label: string }[] = [
-  { value: ProductCategory.COFFEE, label: "Кофе" },
-  { value: ProductCategory.TEA, label: "Чай" },
-  { value: ProductCategory.EQUIPMENT, label: "Оборудование" },
-  { value: ProductCategory.DISHES, label: "Посуда" }
-];
+const CATEGORY_OPTIONS: { value: ProductCategory; label: string }[] = (
+  Object.keys(PRODUCT_CATEGORY_LABEL_RU) as ProductCategory[]
+).map((value) => ({ value, label: PRODUCT_CATEGORY_LABEL_RU[value] }));
 
 export function DemandCreateForm() {
   const router = useRouter();

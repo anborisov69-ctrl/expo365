@@ -1,7 +1,9 @@
 "use client";
 
+import { PRODUCT_IMAGE_PLACEHOLDER_PATH } from "@/lib/exhibitor-default-images";
 import { getProductCoverSrc, getProductVideoSrc } from "@/lib/product-media";
 import type { ProductApiRow } from "@/types/product-api";
+import { useEffect, useState } from "react";
 
 interface ProductMediaHeroProps {
   product: ProductApiRow;
@@ -13,13 +15,18 @@ interface ProductMediaHeroProps {
  */
 export function ProductMediaHero({ product, className }: ProductMediaHeroProps) {
   const cover = getProductCoverSrc(product);
+  const [posterSrc, setPosterSrc] = useState(cover);
   const videoSrc = getProductVideoSrc(product);
+
+  useEffect(() => {
+    setPosterSrc(cover);
+  }, [cover, product.imageUrl, product.mediaUrl, product.mediaType]);
 
   if (product.mediaType === "video" && videoSrc) {
     return (
       <video
         src={videoSrc}
-        poster={cover}
+        poster={posterSrc}
         controls
         playsInline
         className={className ?? "h-full w-full object-cover"}
@@ -30,9 +37,13 @@ export function ProductMediaHero({ product, className }: ProductMediaHeroProps) 
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={cover}
-      alt=""
-      className={className ?? "h-full w-full object-cover"}
+      src={posterSrc}
+      alt={product.name}
+      className={className ?? "h-full w-full object-contain bg-slate-50"}
+      loading="lazy"
+      decoding="async"
+      referrerPolicy="no-referrer"
+      onError={() => setPosterSrc(PRODUCT_IMAGE_PLACEHOLDER_PATH)}
     />
   );
 }

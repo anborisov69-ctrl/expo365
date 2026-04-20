@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useState } from "react";
 import { Upload } from "lucide-react";
 import { mockCompanyName } from "@/lib/exhibitor-mocks";
@@ -45,12 +44,10 @@ export function ExhibitorStandForm() {
           <div className="mt-3 flex flex-wrap items-center gap-4">
             <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-[12px] border border-slate-200 bg-slate-50">
               {logoPreview ? (
-                <Image
+                // eslint-disable-next-line @next/next/no-img-element — blob: URL нестабильны с next/image
+                <img
                   src={logoPreview}
                   alt="Превью логотипа"
-                  width={96}
-                  height={96}
-                  unoptimized
                   className="h-full w-full object-cover"
                 />
               ) : (

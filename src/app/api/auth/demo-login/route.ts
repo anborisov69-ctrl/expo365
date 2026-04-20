@@ -6,7 +6,7 @@ import { NextResponse } from "next/server";
 
 const DEMO_CREDENTIALS = {
   exhibitor: {
-    email: "demo@expo365.ru",
+    email: "stand@expo365.ru",
     passwordPlain: "demo123"
   },
   visitor: {

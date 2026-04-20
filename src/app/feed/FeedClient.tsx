@@ -9,6 +9,7 @@ import {
 import { SiteHeaderLogo } from "@/components/layout/SiteHeaderLogo";
 import { ProductCoverThumb } from "@/components/product/ProductCoverThumb";
 import { ProductMediaHero } from "@/components/product/ProductMediaHero";
+import { VisitorProductActionButtons } from "@/components/product/VisitorProductActionButtons";
 import type { ProductApiRow } from "@/types/product-api";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -78,10 +79,6 @@ export function FeedClient() {
       ...previous,
       [category]: !previous[category]
     }));
-  }
-
-  function requestQuote(product: ProductApiRow) {
-    window.alert(`Демо-режим. Запрос отправлен экспоненту ${product.company.name}`);
   }
 
   return (
@@ -174,7 +171,7 @@ export function FeedClient() {
                         <ProductCoverThumb
                           product={product}
                           className="h-full w-full"
-                          imgClassName="h-full w-full object-cover"
+                          imgClassName="h-full w-full object-contain bg-slate-50"
                         />
                       </div>
                     </button>
@@ -186,13 +183,18 @@ export function FeedClient() {
                       {product.isSampleAvailable ? (
                         <p className="mt-1 text-xs font-medium text-expoOrange">Доступен образец</p>
                       ) : null}
-                      <button
-                        type="button"
-                        className="mt-4 w-full rounded-xl bg-expoOrange py-3 text-sm font-semibold text-white shadow-sm transition hover:brightness-95"
-                        onClick={() => requestQuote(product)}
-                      >
-                        Запросить КП
-                      </button>
+                      <div className="mt-4">
+                        <VisitorProductActionButtons
+                          product={{
+                            id: product.id,
+                            name: product.name,
+                            category: product.category,
+                            isSampleAvailable: product.isSampleAvailable,
+                            companyId: product.companyId
+                          }}
+                          variant="feed"
+                        />
+                      </div>
                     </div>
                   </article>
                 </li>
@@ -230,16 +232,18 @@ export function FeedClient() {
               <p className="text-sm text-neutral-600">{viewProduct.company.name}</p>
               <p className="text-xl font-bold text-expoBlue">{viewProduct.price}</p>
               <p className="text-sm leading-relaxed text-neutral-800">{viewProduct.description}</p>
-              <button
-                type="button"
-                className="mt-2 w-full rounded-xl bg-expoOrange py-3 text-sm font-semibold text-white shadow-sm transition hover:brightness-95"
-                onClick={() => {
-                  requestQuote(viewProduct);
-                  setViewProduct(null);
-                }}
-              >
-                Запросить КП
-              </button>
+              <div className="mt-4">
+                <VisitorProductActionButtons
+                  product={{
+                    id: viewProduct.id,
+                    name: viewProduct.name,
+                    category: viewProduct.category,
+                    isSampleAvailable: viewProduct.isSampleAvailable,
+                    companyId: viewProduct.companyId
+                  }}
+                  variant="feed"
+                />
+              </div>
             </div>
           </div>
         </div>

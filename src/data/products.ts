@@ -30,6 +30,12 @@ export function prismaCategoryToProductCategory(
       return "equipment";
     case PrismaProductCategory.DISHES:
       return "dishes";
+    case PrismaProductCategory.SERVICE:
+    case PrismaProductCategory.FOOD_PRODUCTS:
+    case PrismaProductCategory.TEXTILE:
+    case PrismaProductCategory.DAIRY:
+    case PrismaProductCategory.SYRUPS_AND_BEVERAGES:
+      return "equipment";
     default: {
       const exhaustive: never = category;
       return exhaustive;

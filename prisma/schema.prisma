@@ -18,6 +18,11 @@ enum ProductCategory {
   TEA
   EQUIPMENT
   DISHES
+  SERVICE
+  FOOD_PRODUCTS
+  TEXTILE
+  DAIRY
+  SYRUPS_AND_BEVERAGES
 }
 
 enum DemandStatus {
@@ -35,6 +40,7 @@ enum BidStatus {
 enum InquiryType {
   CP
   SAMPLE
+  SERVICE
 }
 
 enum InquiryStatus {
@@ -43,6 +49,15 @@ enum InquiryStatus {
   IN_PROGRESS
   DONE
   CANCELLED
+  REJECTED
+}
+
+enum ServiceCategory {
+  SERVICE_REPAIR
+  TRAINING
+  TASTING
+  CONSULTING
+  OTHER
 }
 
 model User {
@@ -87,17 +102,52 @@ model Company {
   logoUrl   String?
   /// Краткое описание компании для профиля
   description String?
-  /// Сайт компании
+  /// Сайт компании (дублируется в contacts.website при наличии contacts)
   website   String?
+  /// Контакты: phone, email, address, website (JSON)
+  contacts  Json?
   /// JSON-массив категорий ProductCategory для ленты спроса, например ["COFFEE","TEA"]
   expertiseCategories String @default("[]")
   userId    String    @unique
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  products  Product[]
-  bids      Bid[]
-  inquiries Inquiry[]
+  products      Product[]
+  services      Service[]
+  specialOffers SpecialOffer[]
+  bids          Bid[]
+  inquiries     Inquiry[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+}
+
+model Service {
+  id          String          @id @default(cuid())
+  companyId   String
+  company     Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  price       String?
+  category    ServiceCategory @default(OTHER)
+  imageUrl    String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([companyId])
+}
+
+model SpecialOffer {
+  id          String   @id @default(cuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  price       String
+  imageUrl    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([isActive])
 }
 
 /// Новинка / товар в ленте
@@ -115,6 +165,8 @@ model Product {
   mediaUrl            String?
   category            ProductCategory
   isSampleAvailable   Boolean         @default(false)
+  /// В общей ленте (/feed) показываются только опубликованные новинки
+  isPublished         Boolean         @default(true)
   companyId           String
   company             Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
   createdAt           DateTime        @default(now())
@@ -158,11 +210,11 @@ model Bid {
   @@unique([demandId, companyId])
 }
 
-/// Запрос КП или образца от посетителя
+/// Запрос КП или образца от посетителя (productId опционален для заявок на уровне компании)
 model Inquiry {
   id             String         @id @default(cuid())
-  productId      String
-  product        Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId      String?
+  product        Product?       @relation(fields: [productId], references: [id], onDelete: Cascade)
   companyId      String
   company        Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
   /// В БД колонка `buyerId`
@@ -170,8 +222,8 @@ model Inquiry {
   visitor        User           @relation("VisitorInquiries", fields: [visitorId], references: [id], onDelete: Cascade)
   customerName   String
   customerEmail  String
-  customerPhone  String
-  message        String
+  customerPhone  String?
+  message        String?
   type           InquiryType
   status         InquiryStatus  @default(PENDING)
   createdAt      DateTime       @default(now())

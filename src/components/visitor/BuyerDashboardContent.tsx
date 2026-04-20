@@ -439,7 +439,7 @@ export function BuyerDashboardContent() {
                     <ProductCoverThumb
                       product={product}
                       className="h-full w-full"
-                      imgClassName="h-full w-full object-cover transition group-hover:scale-[1.02]"
+                      imgClassName="h-full w-full object-contain bg-slate-50 transition group-hover:scale-[1.02]"
                     />
                   </div>
                   <div className="p-3">

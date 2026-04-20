@@ -1,5 +1,6 @@
 "use client";
 
+import { VisitorProductActionButtons } from "@/components/product/VisitorProductActionButtons";
 import { ProductMediaHero } from "@/components/product/ProductMediaHero";
 import { PRODUCT_CATEGORY_LABEL_RU } from "@/lib/product-category-labels";
 import type { ProductApiRowWithStats } from "@/types/product-api";
@@ -72,7 +73,28 @@ export function ProductDetailModal({
               <dt className="text-neutral-500">Запросов</dt>
               <dd className="font-medium text-neutral-900">{product.inquiryCount}</dd>
             </div>
+            <div className="rounded-lg bg-neutral-50 px-3 py-2">
+              <dt className="text-neutral-500">В общей ленте</dt>
+              <dd className="font-medium text-neutral-900">
+                {product.isPublished ? "Да" : "Нет (скрыто)"}
+              </dd>
+            </div>
           </dl>
+          <div className="border-t border-neutral-200 pt-4">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+              Как видят посетители
+            </p>
+            <VisitorProductActionButtons
+              product={{
+                id: product.id,
+                name: product.name,
+                category: product.category,
+                isSampleAvailable: product.isSampleAvailable,
+                companyId: product.companyId
+              }}
+              variant="feed"
+            />
+          </div>
           <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:justify-end">
             <button
               type="button"

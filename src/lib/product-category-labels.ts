@@ -5,7 +5,12 @@ export const PRODUCT_CATEGORY_LABEL_RU: Record<ProductCategory, string> = {
   [ProductCategory.COFFEE]: "Кофе",
   [ProductCategory.TEA]: "Чай",
   [ProductCategory.EQUIPMENT]: "Оборудование",
-  [ProductCategory.DISHES]: "Посуда"
+  [ProductCategory.DISHES]: "Посуда",
+  [ProductCategory.SERVICE]: "Сервис",
+  [ProductCategory.FOOD_PRODUCTS]: "Продукты питания",
+  [ProductCategory.TEXTILE]: "Текстиль",
+  [ProductCategory.DAIRY]: "Молочная продукция",
+  [ProductCategory.SYRUPS_AND_BEVERAGES]: "Сиропы и напитки"
 };
 
 /** Совместимость с существующими импортами (покупатель, лента спроса) */
@@ -24,5 +29,10 @@ export const PRODUCT_CATEGORY_HASHTAG_RU: Record<ProductCategory, string> = {
   [ProductCategory.COFFEE]: "кофе",
   [ProductCategory.TEA]: "чай",
   [ProductCategory.EQUIPMENT]: "оборудование",
-  [ProductCategory.DISHES]: "посуда"
+  [ProductCategory.DISHES]: "посуда",
+  [ProductCategory.SERVICE]: "сервис",
+  [ProductCategory.FOOD_PRODUCTS]: "продукты",
+  [ProductCategory.TEXTILE]: "текстиль",
+  [ProductCategory.DAIRY]: "молочка",
+  [ProductCategory.SYRUPS_AND_BEVERAGES]: "сиропы"
 };

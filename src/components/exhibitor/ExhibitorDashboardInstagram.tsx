@@ -1,39 +1,40 @@
 "use client";
 
 import { AddProductModal } from "@/components/exhibitor/AddProductModal";
+import { EditProfileForm } from "@/components/exhibitor/EditProfileForm";
 import { ProductDetailModal } from "@/components/exhibitor/ProductDetailModal";
 import { AnalyticsViewsBars } from "@/components/exhibitor/AnalyticsCharts";
 import { ProductCoverThumb } from "@/components/product/ProductCoverThumb";
-import { parseCompanyExpertiseCategories } from "@/lib/company-expertise";
+import { emptyContacts } from "@/lib/company-contacts";
 import { readDemoSession } from "@/lib/demo-local-auth";
 import { PRODUCT_CATEGORY_HASHTAG_RU } from "@/lib/product-category-labels";
+import type { ExhibitorProfileCompanyProps } from "@/types/exhibitor-profile";
 import type { ProductApiRow, ProductApiRowWithStats, ProductFormPayload } from "@/types/product-api";
 import {
   Bell,
   ChevronLeft,
   Clapperboard,
+  Cog,
+  Coffee,
   Copy,
+  CupSoda,
+  GraduationCap,
   Grid3x3,
   Link2,
   Mail,
   MoreHorizontal,
+  Package,
   Plus,
-  UserSquare
+  Store,
+  UserSquare,
+  Utensils,
+  Wrench
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 
 type TabId = "novinki" | "zaprosy" | "analytics";
-
-type CompanyPayload = {
-  id: string;
-  name: string;
-  logoUrl: string | null;
-  description: string | null;
-  website: string | null;
-  expertiseCategories: string;
-};
 
 type InquiryRow = {
   id: string;
@@ -81,7 +82,8 @@ function formatFollowers(n: number): string {
 
 export function ExhibitorDashboardInstagram() {
   const [tab, setTab] = useState<TabId>("novinki");
-  const [company, setCompany] = useState<CompanyPayload | null>(null);
+  const [company, setCompany] = useState<ExhibitorProfileCompanyProps | null>(null);
+  const [profileEditOpen, setProfileEditOpen] = useState(false);
   const [products, setProducts] = useState<ProductApiRowWithStats[]>([]);
   const [inquiries, setInquiries] = useState<InquiryRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -103,7 +105,7 @@ export function ExhibitorDashboardInstagram() {
       ]);
 
       if (!cRes.ok) throw new Error("company");
-      const cJson = (await cRes.json()) as { company?: CompanyPayload };
+      const cJson = (await cRes.json()) as { company?: ExhibitorProfileCompanyProps };
       setCompany(cJson.company ?? null);
 
       if (!pRes.ok) throw new Error("products");
@@ -126,7 +128,8 @@ export function ExhibitorDashboardInstagram() {
           logoUrl: "/brands/julius-meinl.png",
           description: "Легендарный венский кофе и чай для вашего бизнеса.\n• Оптовые поставки\n• Обучение бариста",
           website: null,
-          expertiseCategories: "[]"
+          contacts: emptyContacts(null),
+          expertiseCategories: []
         });
         setProducts([]);
         setInquiries([]);
@@ -147,11 +150,12 @@ export function ExhibitorDashboardInstagram() {
 
   const expertiseTags = useMemo(() => {
     if (!company) return [] as string[];
-    const cats = parseCompanyExpertiseCategories(company.expertiseCategories);
-    return cats.map((c) => PRODUCT_CATEGORY_HASHTAG_RU[c]);
+    return company.expertiseCategories.map((c) => PRODUCT_CATEGORY_HASHTAG_RU[c]);
   }, [company]);
 
-  const websiteHref = company ? formatWebsiteUrl(company.website) : null;
+  const websiteHref = company
+    ? formatWebsiteUrl(company.contacts.website ?? company.website)
+    : null;
 
   const handle = company ? companyHandle(company.name) : "";
   const postsCount = products.length;
@@ -170,17 +174,6 @@ export function ExhibitorDashboardInstagram() {
       .map((l) => l.trim())
       .filter(Boolean);
   }, [company?.description]);
-
-  const highlights: (
-    | { kind: "tab"; id: TabId; label: string }
-    | { kind: "link"; href: string; label: string }
-  )[] = [
-    { kind: "tab", id: "novinki", label: "Новинки" },
-    { kind: "tab", id: "zaprosy", label: "Запросы" },
-    { kind: "tab", id: "analytics", label: "Статистика" },
-    { kind: "link", href: "/demand-feed", label: "Спрос" },
-    { kind: "link", href: "/exhibitor/settings", label: "Профиль" }
-  ];
 
   function openCreate() {
     setEditing(null);
@@ -312,6 +305,13 @@ export function ExhibitorDashboardInstagram() {
                           Настройки
                         </Link>
                         <Link
+                          href="/exhibitor/special-offers"
+                          className="block px-4 py-2.5 text-sm text-neutral-100 hover:bg-neutral-800"
+                          onClick={() => setMenuOpen(false)}
+                        >
+                          Спецпредложения
+                        </Link>
+                        <Link
                           href="/"
                           className="block px-4 py-2.5 text-sm text-neutral-100 hover:bg-neutral-800"
                           onClick={() => setMenuOpen(false)}
@@ -347,12 +347,13 @@ export function ExhibitorDashboardInstagram() {
                 <div className="mb-4 hidden flex-wrap items-center gap-3 sm:flex">
                   <h1 className="text-xl font-normal text-neutral-100">{handle}</h1>
                   <div className="flex flex-wrap gap-2">
-                    <Link
-                      href="/exhibitor/settings"
+                    <button
+                      type="button"
+                      onClick={() => setProfileEditOpen(true)}
                       className="rounded-lg bg-[#262626] px-4 py-1.5 text-sm font-semibold text-neutral-100 hover:bg-[#363636]"
                     >
                       Редактировать профиль
-                    </Link>
+                    </button>
                     <button
                       type="button"
                       onClick={openCreate}
@@ -415,12 +416,13 @@ export function ExhibitorDashboardInstagram() {
                 </div>
 
                 <div className="mb-4 flex flex-wrap gap-2 sm:hidden">
-                  <Link
-                    href="/exhibitor/settings"
+                  <button
+                    type="button"
+                    onClick={() => setProfileEditOpen(true)}
                     className="min-h-9 flex-1 rounded-lg bg-[#262626] px-3 py-2 text-center text-sm font-semibold text-neutral-100"
                   >
                     Изменить профиль
-                  </Link>
+                  </button>
                   <button
                     type="button"
                     onClick={openCreate}
@@ -474,47 +476,44 @@ export function ExhibitorDashboardInstagram() {
               </div>
             </div>
 
-            {/* Актуальные истории / разделы */}
+            {/* Категории (круглые плашки) */}
             <div className="mt-6 border-t border-neutral-800 pt-4">
               <div className="flex gap-4 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {highlights.map((h) => {
-                  const active = h.kind === "tab" && tab === h.id;
-                  const inner = (
-                    <>
-                      <span
-                        className={`flex h-16 w-16 items-center justify-center rounded-full border-2 bg-[#262626] text-xs font-medium sm:h-[77px] sm:w-[77px] ${
-                          active ? "border-neutral-100" : "border-neutral-700"
-                        }`}
-                      >
-                        {h.label.slice(0, 2)}
-                      </span>
-                      <span className="max-w-[72px] truncate text-center text-[11px] text-neutral-400">
-                        {h.label}
-                      </span>
-                    </>
-                  );
-                  if (h.kind === "link") {
-                    return (
-                      <Link
-                        key={h.href}
-                        href={h.href}
-                        className="flex shrink-0 flex-col items-center gap-1.5"
-                      >
-                        {inner}
-                      </Link>
-                    );
-                  }
-                  return (
-                    <button
-                      key={h.id}
-                      type="button"
-                      onClick={() => setTab(h.id)}
-                      className="flex shrink-0 flex-col items-center gap-1.5"
+                {(
+                  [
+                    { Icon: Coffee, label: "Кофе" },
+                    { Icon: CupSoda, label: "Чай" },
+                    { Icon: Cog, label: "Оборудование" },
+                    { Icon: Utensils, label: "Посуда" },
+                    { Icon: Wrench, label: "Сервис" },
+                    { Icon: GraduationCap, label: "Обучение" },
+                    { Icon: Package, label: "Прочее" }
+                  ] as const
+                ).map(({ Icon, label }) => (
+                  <div key={label} className="flex shrink-0 flex-col items-center gap-1.5">
+                    <div
+                      className="flex h-[60px] w-[60px] items-center justify-center rounded-full bg-white shadow-md transition-shadow duration-200 hover:shadow-lg sm:h-20 sm:w-20"
+                      aria-hidden
                     >
-                      {inner}
-                    </button>
-                  );
-                })}
+                      <Icon className="h-7 w-7 text-neutral-700 sm:h-8 sm:w-8" strokeWidth={1.75} />
+                    </div>
+                    <span className="max-w-[88px] text-center text-[0.75rem] leading-tight text-neutral-500">
+                      {label}
+                    </span>
+                  </div>
+                ))}
+                <Link
+                  href="/exhibitor/showcase"
+                  className="flex shrink-0 flex-col items-center gap-1.5 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0095F6] focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+                  aria-label="Витрина — предпросмотр публичной витрины"
+                >
+                  <div className="flex h-[60px] w-[60px] items-center justify-center rounded-full bg-white shadow-md transition-shadow duration-200 hover:shadow-lg sm:h-20 sm:w-20">
+                    <Store className="h-7 w-7 text-neutral-700 sm:h-8 sm:w-8" strokeWidth={1.75} />
+                  </div>
+                  <span className="max-w-[88px] text-center text-[0.75rem] leading-tight text-neutral-500">
+                    Витрина
+                  </span>
+                </Link>
               </div>
             </div>
 
@@ -604,7 +603,7 @@ export function ExhibitorDashboardInstagram() {
                           <ProductCoverThumb
                             product={p}
                             className="absolute inset-0 h-full w-full"
-                            imgClassName="h-full w-full object-cover transition group-hover:opacity-90"
+                            imgClassName="h-full w-full object-contain bg-slate-50 transition group-hover:opacity-90"
                           />
                           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition group-hover:opacity-100" />
                         </button>
@@ -721,6 +720,61 @@ export function ExhibitorDashboardInstagram() {
           </div>
         </>
       )}
+
+      {profileEditOpen && company && company.id !== "demo-local" ? (
+        <div className="fixed inset-0 z-[110] flex items-end justify-center p-4 sm:items-center">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/70"
+            aria-label="Закрыть"
+            onClick={() => setProfileEditOpen(false)}
+          />
+          <div className="relative z-10 max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-neutral-800 bg-[#121212] p-5 shadow-xl">
+            <div className="mb-4 flex items-center justify-between gap-2">
+              <h2 className="text-lg font-semibold text-neutral-100">Редактирование профиля</h2>
+              <button
+                type="button"
+                className="rounded-full p-2 text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100"
+                aria-label="Закрыть"
+                onClick={() => setProfileEditOpen(false)}
+              >
+                ✕
+              </button>
+            </div>
+            <EditProfileForm
+              companyId={company.id}
+              initial={company}
+              variant="modal"
+              onSaved={(next) => {
+                setCompany(next);
+                setProfileEditOpen(false);
+              }}
+              onCancel={() => setProfileEditOpen(false)}
+            />
+          </div>
+        </div>
+      ) : null}
+
+      {profileEditOpen && company?.id === "demo-local" ? (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/70"
+            aria-label="Закрыть"
+            onClick={() => setProfileEditOpen(false)}
+          />
+          <div className="relative z-10 max-w-sm rounded-xl border border-neutral-700 bg-[#262626] p-6 text-center text-sm text-neutral-200">
+            <p>В демо-режиме профиль не сохраняется на сервер. Войдите как экспонент с аккаунтом из базы.</p>
+            <button
+              type="button"
+              className="mt-4 rounded-lg bg-[#0095F6] px-4 py-2 font-semibold text-white"
+              onClick={() => setProfileEditOpen(false)}
+            >
+              Понятно
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       <AddProductModal
         open={modalOpen}

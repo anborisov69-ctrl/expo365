@@ -5,7 +5,10 @@ import { InquiryType } from "@prisma/client";
 import { NextResponse } from "next/server";
 
 function isInquiryType(value: unknown): value is InquiryType {
-  return typeof value === "string" && (value === "CP" || value === "SAMPLE");
+  return (
+    typeof value === "string" &&
+    (value === "CP" || value === "SAMPLE" || value === "SERVICE")
+  );
 }
 
 export async function GET(request: Request) {
@@ -51,7 +54,7 @@ export async function GET(request: Request) {
     const inquiries = rows.map((row) => ({
       id: row.id,
       productId: row.productId,
-      productName: row.product.name,
+      productName: row.product?.name ?? "Запрос по компании",
       customerName: row.customerName,
       customerEmail: row.customerEmail,
       customerPhone: row.customerPhone,
