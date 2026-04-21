@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -67,7 +67,7 @@ model User {
   password      String
   name          String
   role          Role
-  /// Компания посетителя (опционально); в SQLite колонка `buyerCompany`
+  /// Компания посетителя (опционально); колонка в БД `buyerCompany`
   visitorCompany String? @map("buyerCompany")
   /// Нормализованный номер (+7…), уникальный; вход по телефону
   phone         String?  @unique
