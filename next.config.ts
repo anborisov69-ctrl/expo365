@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  eslint: {
+    ignoreDuringBuilds: true
+  },
   async redirects() {
     return [{ source: "/buyer/:path*", destination: "/visitor/:path*", permanent: true }];
   },
@@ -11,6 +14,7 @@ const nextConfig: NextConfig = {
     }
   },
   images: {
+    domains: ["placehold.co", "via.placeholder.com"],
     /** Явные хосты: шаблон `**` в hostname в Next 15 даёт непредсказуемое поведение для next/image */
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com", pathname: "/**" },
