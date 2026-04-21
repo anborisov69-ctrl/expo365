@@ -44,7 +44,7 @@ export function ExhibitorStandForm() {
           <div className="mt-3 flex flex-wrap items-center gap-4">
             <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-[12px] border border-slate-200 bg-slate-50">
               {logoPreview ? (
-                // eslint-disable-next-line @next/next/no-img-element — blob: URL нестабильны с next/image
+                // eslint-disable-next-line @next/next/no-img-element -- blob: URL нестабильны с next/image
                 <img
                   src={logoPreview}
                   alt="Превью логотипа"

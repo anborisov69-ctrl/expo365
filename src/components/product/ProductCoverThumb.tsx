@@ -28,7 +28,7 @@ export function ProductCoverThumb({
 
   useEffect(() => {
     setSrc(getProductCoverSrc(product));
-  }, [product.imageUrl, product.mediaType]);
+  }, [product]);
 
   return (
     <div className={`relative overflow-hidden ${className}`}>

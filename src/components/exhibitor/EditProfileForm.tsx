@@ -21,7 +21,7 @@ function isValidEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t);
 }
 
-async function postUpload(file: File, companyId: string | null, isAdminContext: boolean): Promise<string> {
+async function postUpload(file: File, companyId: string | null): Promise<string> {
   const formData = new FormData();
   formData.append("file", file);
   if (companyId) {
@@ -112,7 +112,7 @@ export function EditProfileForm({
       setUploading(true);
       setMessage(null);
       try {
-        const url = await postUpload(file, companyId, isAdmin);
+        const url = await postUpload(file, companyId);
         setLogoUrl(url);
       } catch (e) {
         setMessage(e instanceof Error ? e.message : "Ошибка загрузки");
@@ -120,7 +120,7 @@ export function EditProfileForm({
         setUploading(false);
       }
     },
-    [companyId, isAdmin]
+    [companyId]
   );
 
   async function handleSubmit(event: React.FormEvent) {

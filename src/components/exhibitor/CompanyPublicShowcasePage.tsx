@@ -132,7 +132,7 @@ export function CompanyPublicShowcasePage({ companyId }: { companyId: string }) 
             <div className="mx-auto shrink-0 sm:mx-0">
               {company.logoUrl && !logoFailed ? (
                 <div className="relative h-28 w-28 overflow-hidden rounded-2xl border border-slate-100 bg-slate-100 sm:h-36 sm:w-36">
-                  {/* eslint-disable-next-line @next/next/no-img-element — надёжнее next/image для внешних CDN и без обязательной оптимизации */}
+                  {/* eslint-disable-next-line @next/next/no-img-element -- надёжнее next/image для внешних CDN и без обязательной оптимизации */}
                   <img
                     src={company.logoUrl}
                     alt=""

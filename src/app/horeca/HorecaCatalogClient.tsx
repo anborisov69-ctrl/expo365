@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  HORECA_CATEGORY_LABELS,
-  type HorecaExhibitor,
-  horecaExhibitors
-} from "@/data/exhibitors";
+import { HORECA_CATEGORY_LABELS, horecaExhibitors } from "@/data/exhibitors";
 import { useMemo, useState } from "react";
 
 const ALL_KEY = "all" as const;
@@ -24,7 +20,7 @@ export function HorecaCatalogClient() {
     return horecaExhibitors.filter((ex) => ex.categories.includes(selectedCategory));
   }, [selectedCategory]);
 
-  function handleCardClick(exhibitor: HorecaExhibitor) {
+  function handleCardClick() {
     window.alert("Страница компании в разработке");
   }
 
@@ -75,7 +71,7 @@ export function HorecaCatalogClient() {
             <li key={exhibitor.id}>
               <button
                 type="button"
-                onClick={() => handleCardClick(exhibitor)}
+                onClick={handleCardClick}
                 className="flex w-full flex-col items-center rounded-2xl border border-slate-100 bg-white p-6 text-center shadow-md transition hover:border-expoBlue/25 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-expoBlue focus-visible:ring-offset-2"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
